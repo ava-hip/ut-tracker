@@ -1,0 +1,55 @@
+<form [formGroup]="form" (submit)="addPlayer()">
+<table class="w-full text-sm text-left rtl:text-right text-gray-500">
+  <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+  <tr>
+    <th scope="col" class="px-6 py-3 w-[200px]">Joueur</th>
+    <th scope="col" class="px-6 py-3 text-center">Poste</th>
+    <th scope="col" class="px-6 py-3 text-center">But</th>
+    <th scope="col" class="px-6 py-3 text-center">Passe décisive</th>
+    <th scope="col" class="px-6 py-3 justify-end flex">Actions</th>
+  </tr>
+  </thead>
+  <tbody>
+    @for (player of players$ | async; track players$) {
+      <tr class="bg-white border-b hover:bg-gray-50">
+        <td class="px-6 py-4">
+          <img [src]="player.imgLink" alt="player" width="100px">
+        </td>
+        <td class="px-6 py-4 text-center">
+          {{ player.position | uppercase}}
+        </td>
+        <td class="px-6 py-4 text-center">
+          {{ player.goal }}
+        </td>
+        <td class="px-6 py-4 text-center">
+          {{ player.assist }}
+        </td>
+        <td class="px-6 py-4 text-right">
+          <button type="button" (click)="deletePlayer(player.id)" class="font-medium text-red-600 hover:underline">Supprimer</button>
+        </td>
+      </tr>
+    }
+  <tr class="bg-white border-b hover:bg-gray-50">
+      <td class="px-6 py-4">
+        <input name="imgLink" type="text" formControlName="imgLink" class="bg-gray-200 h-8">
+      </td>
+      <td class="px-6 py-4 text-center">
+        <select name="goal" type="number" formControlName="position" class="bg-gray-200 h-8">
+          @for (position of positions; track $index) {
+            <option>{{ position }}</option>
+          }
+        </select>
+      </td>
+      <td class="px-6 py-4 text-center">
+        <input name="position" type="text" formControlName="goal" class="bg-gray-200 h-8">
+      </td>
+      <td class="px-6 py-4 text-center">
+        <input name="assist" type="number" formControlName="assist" class="bg-gray-200 h-8">
+      </td>
+      <td class="px-6 py-4 text-right">
+        <button type="button" (click)="addPlayer()" class="font-medium text-blue-600 hover:underline">Ajouter</button>
+      </td>
+  </tr>
+  </tbody>
+</table>
+</form>
