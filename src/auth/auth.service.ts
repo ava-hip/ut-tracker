@@ -3,50 +3,71 @@ import {HttpClient, HttpContext, HttpInterceptorFn} from '@angular/common/http';
 import {AuthResponse} from './login/auth-response';
 import {environment} from '../environments/environment';
 import {User} from '../common/models/user';
-import {catchError, Observable, throwError} from 'rxjs';
+import {BehaviorSubject, catchError, map, Observable, throwError} from 'rxjs';
+import {CanActivateFn, Router} from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  constructor(private http: HttpClient) {}
+  useLocal: boolean = false;
+  private currentResponse: BehaviorSubject<AuthResponse | undefined> = new BehaviorSubject<AuthResponse | undefined>(undefined)
+  private AUTH_KEY = "AUTH_RESPONSE"
+  private currentUser$: BehaviorSubject<User | undefined> = new BehaviorSubject<User | undefined>(undefined)
 
-  login(credentials: {email: string, password: string}) {
-    return this.http.post<AuthResponse>(`${environment.API_URL}/auth/authenticate`, credentials)
+  constructor(private http: HttpClient, private router: Router) {
+    const sessionAuth = sessionStorage.getItem(this.AUTH_KEY) || localStorage.getItem(this.AUTH_KEY)
+    if (sessionAuth) {
+      const r: AuthResponse = JSON.parse(sessionAuth)
+      this.currentResponse.next(r)
+      this.currentUser$.next(r.users[0])
+    }
+    this.currentResponse.subscribe(response => {
+      if (response) {
+        (this.useLocal ? localStorage : sessionStorage).setItem(this.AUTH_KEY, JSON.stringify(response))
+      } else {
+        sessionStorage.clear()
+        localStorage.clear()
+      }
+    })
   }
+
+  get currentUser(): User | undefined {
+    return this.currentUser$.value;
+  }
+
+  get token(): string | undefined {
+    return this.currentResponse.value?.token
+  }
+
+  get isLogged(): boolean {
+    return !!this.currentResponse.value
+  }
+
 
   register(credentials: {email: string, username: string, password: string}) {
     return this.http.post(`${environment.API_URL}/auth/register`, credentials)
-
-  }
-
-  set token(token: string) {
-    localStorage.setItem('token', token);
-  }
-
-  get token(): string {
-    return <string> localStorage.getItem('token')
-  }
-
-  set users(users: User[]) {
-    localStorage.setItem('users', JSON.stringify(users))
-  }
-
-  get users(): User[] {
-    const userData = localStorage.getItem('users');
-    return userData ? JSON.parse(userData) : [];
-  }
-
-  get currentUser(): User | null {
-    return this.users.length > 0 ? this.users[0] : null;
   }
 
   confirm(token: string, context?: HttpContext): Observable<void> {
     return this.http.get<void>(`/auth/activate-account?token=${encodeURIComponent(token)}`, { context });
   }
 
+  login(credentials: {email: string, password: string}) {
+    return this.http.post<AuthResponse>(`${environment.API_URL}/auth/authenticate`, credentials)
+      .pipe(map(response => {
+        response.users = response.users.map(user => {
+          return user
+        })
+        this.currentResponse.next(response)
+        this.currentUser$.next(response.users[0])
+        return this.router.navigate(['/home'])
+      }))
+  }
+
   logout() {
-    return null
+    this.currentResponse.next(undefined)
+    this.router.navigate(['/'])
   }
 
 }
@@ -62,9 +83,21 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     })
   }
   return next(req).pipe(catchError(err => {
-    if (/*err.status == 401*/ err.error.message === "Erreur : jeton malformé !") {
+    if (err.status == 401) {
       service.logout()
     }
     return throwError(() => err)
   }));
 };
+
+
+export const authGuard: CanActivateFn = () => {
+  let authService = inject(AuthService)
+  let router = inject(Router)
+  if (!authService.isLogged) {
+    router.navigate(['/login'])
+    return false
+  }
+  return authService.isLogged
+}
+

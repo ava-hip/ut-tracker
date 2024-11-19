@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import {AuthService} from '../auth.service';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router, RouterLink} from '@angular/router';
-import {AuthResponse} from './auth-response';
 
 @Component({
   selector: 'app-login',
@@ -28,12 +27,6 @@ export class LoginComponent {
     if (this.form.valid) {
       this.service.login(this.form.getRawValue())
         .subscribe({
-          next: (response: AuthResponse) => {
-            this.service.token = <string>response.token
-            this.service.users = response.users
-            this.service.users = response.users
-            this.router.navigate(['teams'])
-          },
           error: (err) => {
             console.log(err)
           }
