@@ -61,13 +61,33 @@ export class AuthService {
         })
         this.currentResponse.next(response)
         this.currentUser$.next(response.users[0])
-        return this.router.navigate(['/home'])
+        this.router.navigate(['/home']).then(r => location.reload());
       }))
   }
 
   logout() {
     this.currentResponse.next(undefined)
-    this.router.navigate(['/'])
+    sessionStorage.clear()
+    this.router.navigate(['/login'])
+    location.reload();
+  }
+
+  decodeToken(token: string): any {
+    try {
+      let payload = token.split('.')[1];
+      return JSON.parse(atob(payload));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  isTokenExpired(token: string): boolean {
+    const decoded = this.decodeToken(token);
+    if (!decoded || !decoded.exp) {
+      return true;
+    }
+    const expirationDate = new Date(decoded.exp * 1000); // Convert seconds to milliseconds
+    return expirationDate < new Date();
   }
 
 }

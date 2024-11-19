@@ -23,7 +23,8 @@ export const routes: Routes = [
   {
     path: "home",
     loadComponent: () => import("../home/home.component").then(m => m.HomeComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+
   },
   {
     path: "teams",
@@ -33,7 +34,8 @@ export const routes: Routes = [
     },
     resolve: {
       teams: () => inject(HttpClient).get("/team/all/" + inject(AuthService).currentUser?.email)
-    }
+    },
+    canActivate: [authGuard]
   },
   {
     path: "teams/:id",
@@ -48,6 +50,7 @@ export const routes: Routes = [
           : undefined
       },
     },
+    canActivate: [authGuard]
   },
   // todo : add 404
   {path: "**", redirectTo: ""},
